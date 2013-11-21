@@ -178,91 +178,85 @@ class Plotter
     $angles[side].innerText = (@state.angles[side] * (180/PI)).toFixed(2)
 
   start: ->
-    @moveByRelativePlan =>
-      @render()
+    instructions = @generateInstructions(_.clone(@state), @relativePlan)
+    console.log instructions
+    @renederSimulation instructions
 
-  generateInstructions: ->
-    @frames = []
-    for [dx, dy] in @relativePlan
-      @generateTurnFrames @state.x + dx, @state.y + dy
+  renederSimulation: (instructions) ->
+    renderInstruction = (i) =>
+      instruction = instructions[i]
+      if instruction.indexOf('l') isnt -1
+        @stepWheel 'l', -1
+      if instruction.indexOf('L') isnt -1
+        @stepWheel 'l'
+      if instruction.indexOf('r') isnt -1
+        @stepWheel 'r', -1
+      if instruction.indexOf('R') isnt -1
+        @stepWheel 'r'
 
-#      @moveBy dx, dy
+      @updatePosition()
 
-#    return cb() unless @relativePlan.length
-#    [x, y] = .shift()
-#    @moveBy x, y, => @moveByRelativePlan(cb)
+      next = =>
+        i++
+        renderInstruction(i) if i < instructions.length
 
-  moveByRelativePlan: (cb) ->
-    return cb() unless @relativePlan.length
-    [x, y] = @relativePlan.shift()
-    @moveBy x, y, => @moveByRelativePlan(cb)
+      if i % @speed is 0
+        @render()
+        requestAnimationFrame next
+      else
+        next()
 
-  moveBy: (dx, dy, cb) ->
-    @goToPosition @state.x + dx, @state.y + dy, cb
+    renderInstruction(0) if instructions.length
 
-  generateTurnFrames: (x, y) ->
-    d = distance @state, {x:x, y:y}
-#    console.log 'distance', d
-#    console.log 'from', @state.x, @state.y
-#    console.log 'to', x, y
-    c = 2 * PI * @roller.r
-    lenPerStep = c / @roller.steps
+  generateInstructions: (state, relativePath) ->
+    #TODO Not the best way doing it. Maybe give array to fill in.
+    result = []
+    @lineToInstructions(state, dx, dy, result) for [dx, dy] in relativePath
+    return result
 
-#    console.log 'lenPerStep', lenPerStep
-    parts = Math.ceil(d) * 2
-    startX = @state.x
-    startY = @state.y
-    wheelTurns = []
-    for i in [0..parts]
-      portion =
-        if i < parts
-          i / parts
+  lineToInstructions: (state, dx, dy, result=[]) ->
+    # Result of call
+    # 1. Returns list of frames with notation as 'lR' (left back, right forward) 'L' (left forward)
+    # 2. Update state.x/y to predicted real position after performed moves
+
+    lineEnd = x:state.x + dx, y:state.y + dy
+    d = distance state, lineEnd
+    samplesNumber = Math.ceil(d) * 2 # This constant should be tweaked
+
+    samples =
+      for i in [0..samplesNumber]
+        portion = i / samplesNumber
+        x: state.x + (lineEnd.x - state.x) * portion
+        y: state.y + (lineEnd.y - state.y) * portion
+
+    #TODO can be calculated once
+    lengthPerTurn = 2 * PI * @roller.r / @roller.steps
+
+    for sample in samples
+      {left: {x: gx}, height: gy} = realHypStartPositions(state.l, state.r, @roller.d, @roller.r)
+      state.x = gx
+      state.y = gy
+
+      calculateTurnsForSide = (origin, side)->
+        currentD = distance origin, state
+        newD = distance origin, sample
+        # TODO What if currentLD - newLD >= lengthPerTurn * 2
+        # Two or more steps should be performed between steps
+        distanceDiff = newD - currentD
+        needForStep = Math.abs(distanceDiff) >= lengthPerTurn
+        if needForStep
+          bigger = distanceDiff > 0
+          direction = bigger and 1 or -1
+          state[side] += direction * lengthPerTurn
+          bigger and side.toUpperCase() or side
         else
-          1
-      sx = startX + (x - startX) * portion
-      sy = startY + (y - startY) * portion
+          ""
 
-      turn = ''
+      instruction = calculateTurnsForSide({x:0, y:0}, 'l') + calculateTurnsForSide({x:@roller.d, y:0}, 'r')
+      result.push instruction if instruction
 
-      currentLD = distance {x:0, y:0}, @state
-      newLD = distance {x:0, y:0}, {x:sx, y:sy}
-      if Math.abs(currentLD - newLD) >= lenPerStep
-        bigger = newLD - currentLD > 0
-        turn += if bigger then 'L' else 'l'
-        direction = if bigger then 1 else -1
-        @state.l += direction * lenPerStep
+    return result
 
-      currentRD = distance {x:@roller.d, y:0}, @state
-      newRD = distance {x:@roller.d, y:0}, {x:sx, y:sy}
-      if Math.abs(currentRD - newRD) >= lenPerStep
-#        turn += if newRD - currentRD > 0 then 'R' else 'r'
-        bigger = newRD - currentRD
-        turn += if bigger then 'R' else 'r'
-        direction = if bigger then 1 else -1
-        @state.r += direction * lenPerStep
-
-      wheelTurns.push turn
-
-    return wheelTurns
-
-#      @moveGandola()
-
-
-#  goToState: (newState) ->
-#    if newState.l isnt @state.l or newState.r isnt @state.r
-#      requestAnimationFrame =>
-#        if newState.l > @state.l
-#          @stepWheel 'l'
-#        else if newState.l < @state.l
-#          @stepWheel 'l', -1
-#        if newState.r > @state.r
-#          @stepWheel 'r'
-#        else if newState.r < @state.r
-#          @stepWheel 'r', -1
-#        $left.value = @state.l
-#        $right.value = @state.r
-#        @render()
-#        @goToState(newState)
 
 [w, h] = [700, 600]
 canvas = document.getElementsByTagName('canvas').item(0)
@@ -300,7 +294,7 @@ plotter.render()
 
 x = plotter.state.x
 y = plotter.state.y
-times = 25
+times = 40
 angle = PI/4
 len = 10
 plotter.relativePlan.push [10, 10]
@@ -312,8 +306,8 @@ for i in [1..times]
 
   plotter.relativePlan.push [dx, dy]
 
-#console.log plotter.relativePlan
-plotter.interactive = false
+plotter.interactive = true
+plotter.speed = 10
 plotter.start()
 
 #plotter.goToState(l:100, r:500)
