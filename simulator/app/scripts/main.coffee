@@ -24,10 +24,10 @@ realHypStartPositions = (hr1, hr2, d, radius) ->
     x: Math.cos(alpha) * radius
     y: Math.sin(alpha) * radius
 
-  left:
+  l:
     roller: rollerPosition(hr1, hv1, x1)
     x: x1
-  right:
+  r:
     roller: rollerPosition(hr2, hv2, x2)
     x: x2
   height: y
@@ -73,7 +73,7 @@ class Plotter
     x: 30-0.5
     y: 30-0.5
     r: 20
-    steps: 200 #per Revolution
+    steps: 600 #per Revolution
 
   state:
     l: 300
@@ -133,9 +133,9 @@ class Plotter
 
   updatePosition: ->
     data = realHypStartPositions(@state.l, @state.r, @roller.d, @roller.r)
-    @state.x = data.left.x
+    @state.x = data.l.x
     @state.y = data.height
-    @state.rollers = left: data.left.roller, right: data.right.roller
+    @state.rollers = left: data.l.roller, right: data.r.roller
     @path.push [@state.x, @state.y]
 
   renderGandola: ->
@@ -221,39 +221,50 @@ class Plotter
 
     lineEnd = x:state.x + dx, y:state.y + dy
     d = distance state, lineEnd
+    return unless d
     samplesNumber = Math.ceil(d) * 2 # This constant should be tweaked
 
     samples =
       for i in [0..samplesNumber]
         portion = i / samplesNumber
-        x: state.x + (lineEnd.x - state.x) * portion
-        y: state.y + (lineEnd.y - state.y) * portion
+        xx = state.x + (lineEnd.x - state.x) * portion
+        yy = state.y + (lineEnd.y - state.y) * portion
+        x: xx
+        y: yy
 
     #TODO can be calculated once
     lengthPerTurn = 2 * PI * @roller.r / @roller.steps
 
     for sample in samples
-      {left: {x: gx}, height: gy} = realHypStartPositions(state.l, state.r, @roller.d, @roller.r)
-      state.x = gx
-      state.y = gy
+      happy = false
+      while not happy
+        data = realHypStartPositions(state.l, state.r, @roller.d, @roller.r)
+        state.x = data.l.x
+        state.y = data.height
 
-      calculateTurnsForSide = (origin, side)->
-        currentD = distance origin, state
-        newD = distance origin, sample
-        # TODO What if currentLD - newLD >= lengthPerTurn * 2
-        # Two or more steps should be performed between steps
-        distanceDiff = newD - currentD
-        needForStep = Math.abs(distanceDiff) >= lengthPerTurn
-        if needForStep
-          bigger = distanceDiff > 0
-          direction = bigger and 1 or -1
-          state[side] += direction * lengthPerTurn
-          bigger and side.toUpperCase() or side
-        else
-          ""
+        calculateTurnsForSide = (origin, side)->
+          targetD = distance origin, sample
+          currentD = distance origin, state
+#          console.log currentD - state[side]
+#        newD = distance origin, sample
+          # TODO What if currentLD - newLD >= lengthPerTurn * 2
+          # Two or more steps should be performed between steps
+          distanceDiff = targetD - currentD #state[side]
+          needForStep = Math.abs(distanceDiff) >= lengthPerTurn
+          happy = happy && Math.abs(distanceDiff) < lengthPerTurn * 2
+          if needForStep
+            bigger = distanceDiff > 0
+            direction = bigger and 1 or -1
+            state[side] += direction * lengthPerTurn
+            bigger and side.toUpperCase() or side
+          else
+            ""
 
-      instruction = calculateTurnsForSide({x:0, y:0}, 'l') + calculateTurnsForSide({x:@roller.d, y:0}, 'r')
-      result.push instruction if instruction
+        happy = true
+#        leftOrigin = {x:data[side].roller.x, y:data[side].roller.y}
+#        rightOrigin = {x:@roller.d - data[side].roller.x, y:data[side].roller.y}
+        instruction = calculateTurnsForSide({x:0, y:0}, 'l') + calculateTurnsForSide({x:@roller.d, y:0}, 'r')
+        result.push instruction if instruction
 
     return result
 
@@ -275,39 +286,40 @@ plotter.render()
 
 #Draw circles
 
-#x = plotter.state.x
-#y = plotter.state.y
-#r = 50
-#oldx = x + Math.cos(0) * r
-#oldy = y + Math.sin(0) * r
-#plotter.relativePlan.push [100, -100]
-#sides = 10
-#for i in [0..sides]
-#  angle = PI*2*(i/sides)
-#  newx = x + Math.cos(angle) * r
-#  newy = y + Math.sin(angle) * r
-#  dx = newx - oldx
-#  dy = newy - oldy
-#  plotter.relativePlan.push [dx, dy]
-#  oldx = newx
-#  oldy = newy
-
 x = plotter.state.x
 y = plotter.state.y
-times = 40
-angle = PI/4
-len = 10
-plotter.relativePlan.push [10, 10]
-for i in [1..times]
-  dx = Math.cos(angle) * len
-  dy = Math.sin(angle) * len
-  len += 10
-  angle += PI/2
+r = 50
+oldx = x + Math.cos(0) * r
+oldy = y + Math.sin(0) * r
+plotter.relativePlan.push [100, -100]
+sides = 50
+times = 0
+for t in [0..times]
+  for i in [0..sides]
+    angle = PI*2*(i/sides)
+    newx = x + Math.cos(angle) * r
+    newy = y + Math.sin(angle) * r
+    dx = newx - oldx
+    dy = newy - oldy
+    plotter.relativePlan.push [dx, dy]
+    oldx = newx
+    oldy = newy
 
-  plotter.relativePlan.push [dx, dy]
+#x = plotter.state.x
+#y = plotter.state.y
+#times = 40
+#angle = PI/4
+#len = 10
+#plotter.relativePlan.push [10, 10]
+#for i in [1..times]
+#  dx = Math.cos(angle) * len
+#  dy = Math.sin(angle) * len
+#  len += 10
+#  angle += PI/2
+#  plotter.relativePlan.push [dx, dy]
 
 plotter.interactive = true
-plotter.speed = 10
+plotter.speed = 5
 plotter.start()
 
 #plotter.goToState(l:100, r:500)
