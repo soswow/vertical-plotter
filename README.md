@@ -10,3 +10,5 @@ so one code drives simulator and actual motors.
 and sending commands to the Arduino
 
 [arduino](/arduino) folder slightly modified firmata client code
+
+For those who found this repo by accident - This project in development right now.
