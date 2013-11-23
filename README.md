@@ -6,7 +6,7 @@ Main logic is in client software. I have simulator and code that sends actual co
 Everything is written in WEB technologies (html, coffeescript, node, nodewebkit),
 so one code drives simulator and actual motors.
 
-(simulator)[/simulator] folder contains main application responsible for drawing simulation
+[simulator](/simulator) folder contains main application responsible for drawing simulation
 and sending commands to the Arduino
 
-(arduino)[/arduino] folder slightly modified firmata client code
+[arduino](/arduino) folder slightly modified firmata client code
