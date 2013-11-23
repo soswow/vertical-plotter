@@ -110,6 +110,27 @@ module.exports = (grunt) ->
       css: ['<%= yeoman.dist %>/styles/{,*/}*.css']
 
 
+    htmlmin:
+      dist:
+        options: {
+          #/*removeCommentsFromCDATA: true,
+          #// https://github.com/yeoman/grunt-usemin/issues/44
+          #//collapseWhitespace: true,
+          #collapseBooleanAttributes: true,
+          #removeAttributeQuotes: true,
+          #removeRedundantAttributes: true,
+          #useShortDoctype: true,
+          #removeEmptyAttributes: true,
+          #removeOptionalTags: true*/
+        }
+        files: [
+          expand: true
+          cwd: '<%= yeoman.app %>'
+          src: '*.html'
+          dest: '<%= yeoman.dist %>'
+        ]
+
+
     imagemin:
       dist:
         files: [
@@ -132,9 +153,18 @@ module.exports = (grunt) ->
             '.htaccess'
             'images/{,*/}*.{webp,gif}'
             'styles/fonts/{,*/}*.*'
+            'package.json'
           ]
         ]
 
+    nodewebkit:
+      options:
+        build_dir: './webkitbuilds' # Where the build version of my node-webkit app is saved
+        mac: true
+        win: false
+        linux32: false
+        linux64: false
+      src: ['<%= yeoman.dist %>/**/*'] # Your node-wekit app
 
     concurrent:
       server: [
@@ -145,6 +175,7 @@ module.exports = (grunt) ->
         'coffee'
         'compass'
         'imagemin'
+        'htmlmin'
       ]
 
 
@@ -159,7 +190,6 @@ module.exports = (grunt) ->
           'watch'
         ]
 
-
     grunt.registerTask 'build', [
       'clean:dist'
       'useminPrepare'
@@ -169,4 +199,5 @@ module.exports = (grunt) ->
       'uglify'
       'copy:dist'
       'usemin'
+      'nodewebkit'
     ]

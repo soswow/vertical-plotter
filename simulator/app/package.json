@@ -1,0 +1,27 @@
+{
+  "main": "index.html",
+  "name": "vertical-plotter",
+  "version": "0.0.1",
+  "dependencies": {
+    "firmata": "latest",
+    "svgmill": "0.0.1"
+  },
+  "window": {
+    "title": "vertical-plotter",
+    "toolbar": false,
+    "frame": true,
+    "width": 800,
+    "height": 500,
+    "position": "center",
+    "min_width": 400,
+    "min_height": 200,
+    "max_width": 800,
+    "max_height": 600
+  },
+  "webkit": {
+    "plugin": true
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  }
+}
