@@ -4,19 +4,21 @@
   "version": "0.0.1",
   "dependencies": {
     "firmata": "latest",
-    "svgmill": "0.0.1"
+    "svgmill": "0.0.1",
+    "underscore": "~1.5.2",
+    "backbone-events-standalone": "~0.2.1"
   },
   "window": {
     "title": "vertical-plotter",
-    "toolbar": false,
+    "toolbar": true,
     "frame": true,
-    "width": 800,
-    "height": 500,
+    "width": 960,
+    "height": 400,
     "position": "center",
-    "min_width": 400,
-    "min_height": 200,
-    "max_width": 800,
-    "max_height": 600
+    "min_width": 960,
+    "min_height": 400,
+    "max_width": 960,
+    "max_height": 400
   },
   "webkit": {
     "plugin": true

@@ -8,26 +8,23 @@ hypRealToVirtual = (hypReal, radius) ->
 triangleHeight = (a, b, c) ->
   sqrt((a + b - c) * (a - b + c) * (-a + b + c) * (a + b + c)) / (c * 2)
 
-positionForHyps = (h1, h2, d) ->
-  y = triangleHeight(h1, h2, d)
-  x1 = sqrt pow2(h1) - pow2(y)
-  x2 = sqrt pow2(h2) - pow2(y)
-  [y, x1, x2]
-
 realHypStartPositions = (hr1, hr2, d, radius) ->
   hv1 = hypRealToVirtual hr1, radius
   hv2 = hypRealToVirtual hr2, radius
-  [y, x1, x2] = positionForHyps hv1, hv2, d
+
+  y = triangleHeight(hv1, hv2, d)
+  x1 = sqrt pow2(hv1) - pow2(y)
+  x2 = sqrt pow2(hv2) - pow2(y)
 
   rollerPosition = (hr, hv, x) ->
-    alpha = Math.asin(hr/hv) + Math.asin(x/hv) - (Math.PI/2)
+    alpha = Math.asin(hr / hv) + Math.asin(x / hv) - (Math.PI / 2)
     x: Math.cos(alpha) * radius
     y: Math.sin(alpha) * radius
 
-  l:
+  left:
     roller: rollerPosition(hr1, hv1, x1)
     x: x1
-  r:
+  rright:
     roller: rollerPosition(hr2, hv2, x2)
     x: x2
   height: y
@@ -49,9 +46,9 @@ distance = ({x: x1, y: y1}, {x: x2, y: y2}) ->
 
 $left = document.getElementById("left")
 $right = document.getElementById("right")
-$angles =
-  l: document.getElementById("leftAngle")
-  r: document.getElementById("rightAngle")
+#$angles =
+#  l: document.getElementById("leftAngle")
+#  r: document.getElementById("rightAngle")
 
 
 #updateState = ->
@@ -67,17 +64,17 @@ $angles =
 #$right.addEventListener 'change', updateState
 
 class Plotter
-  stringLen: 500
+  stringLen: 730 * 2
   roller:
-    d: 500 # Distance between
-    x: 30-0.5
-    y: 30-0.5
-    r: 20
-    steps: 600 #per Revolution
+    d: 1154 - 18 * 2 # Distance between
+    x: 18-0.5
+    y: 18-0.5
+    r: 24
+    steps: 200 #per Revolution
 
   state:
-    l: 300
-    r: 300
+    l: 730
+    r: 625
     angles:
       l: 0
       r: 0
@@ -107,8 +104,6 @@ class Plotter
       @ctx.arc x, @roller.y, @roller.r, 0, Math.PI * 2
       @ctx.moveTo x + Math.cos(@state.angles[side]) * @roller.r, @roller.y + Math.sin(@state.angles[side]) * @roller.r
       @ctx.lineTo x + Math.cos(@state.angles[side] + PI) * @roller.r, @roller.y + Math.sin(@state.angles[side] + PI) * @roller.r
-#      @ctx.moveTo x + Math.cos(@state.angles[side] - PI/2) * @roller.r, @roller.y + Math.sin(@state.angles[side] - PI/2) * @roller.r
-#      @ctx.lineTo x + Math.cos(@state.angles[side] + PI/2) * @roller.r, @roller.y + Math.sin(@state.angles[side] + PI/2) * @roller.r
 
     drawForX @roller.x, 'l'
     drawForX @roller.d + @roller.x, 'r'
@@ -175,12 +170,12 @@ class Plotter
     @state[side] += direction * lenPerStep
     direction *= -1 if side is 'r'
     @state.angles[side] += direction * anglePerStep
-    $angles[side].innerText = (@state.angles[side] * (180/PI)).toFixed(2)
 
   start: ->
     instructions = @generateInstructions(_.clone(@state), @relativePlan)
-    console.log instructions
+#    document.getElementById("log").innerText = '\'' + instructions.join("','") + '\''
     @renederSimulation instructions
+    return instructions
 
   renederSimulation: (instructions) ->
     renderInstruction = (i) =>
@@ -209,7 +204,6 @@ class Plotter
     renderInstruction(0) if instructions.length
 
   generateInstructions: (state, relativePath) ->
-    #TODO Not the best way doing it. Maybe give array to fill in.
     result = []
     @lineToInstructions(state, dx, dy, result) for [dx, dy] in relativePath
     return result
@@ -269,7 +263,7 @@ class Plotter
     return result
 
 
-[w, h] = [700, 600]
+[w, h] = [1170, 900]
 canvas = document.getElementsByTagName('canvas').item(0)
 canvas.width = w
 canvas.height = h
@@ -288,11 +282,11 @@ plotter.render()
 
 x = plotter.state.x
 y = plotter.state.y
-r = 50
+r = 100
 oldx = x + Math.cos(0) * r
 oldy = y + Math.sin(0) * r
-plotter.relativePlan.push [100, -100]
-sides = 50
+#plotter.relativePlan.push [10, -10]
+sides = 10
 times = 0
 for t in [0..times]
   for i in [0..sides]
@@ -320,7 +314,17 @@ for t in [0..times]
 
 plotter.interactive = true
 plotter.speed = 5
-plotter.start()
+#plotter.start()
 
+Driver = require("./node/driver").Driver
+driver = new Driver()
+
+document.getElementById("drawButton").addEventListener 'click', ->
+  instructions = plotter.start()
+  driver.on 'ready', ->
+    @instructions = instructions
+  driver.initialize()
+
+#window.plotter = plotter
 #plotter.goToState(l:100, r:500)
 

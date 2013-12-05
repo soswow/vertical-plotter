@@ -15,7 +15,7 @@ module.exports = (grunt) ->
         tasks: ['coffee:dist']
       compass:
         files: ['<%= yeoman.app %>/styles/{,**/}*.{scss,sass}']
-        tasks: ['compass:server', 'autoprefixer']
+        tasks: ['compass:server']
       livereload:
         options:
           livereload: '<%= connect.options.livereload %>'
@@ -60,6 +60,7 @@ module.exports = (grunt) ->
           ]
         ]
       server: '.tmp'
+      releases: 'webkitbuilds/releases'
 
 
     coffee:
@@ -143,7 +144,7 @@ module.exports = (grunt) ->
 
     copy:
       dist:
-        files: [
+        files: [{
           expand: true
           dot: true
           cwd: '<%= yeoman.app %>'
@@ -155,7 +156,15 @@ module.exports = (grunt) ->
             'styles/fonts/{,*/}*.*'
             'package.json'
           ]
-        ]
+        },{
+          expand: true
+          dot: true
+          cwd: '.tmp'
+          dest: '<%= yeoman.dist %>'
+          src: [
+            'scripts/node/*.js'
+          ]
+        }]
 
     nodewebkit:
       options:
@@ -164,6 +173,7 @@ module.exports = (grunt) ->
         win: false
         linux32: false
         linux64: false
+        keep_nw: true
       src: ['<%= yeoman.dist %>/**/*'] # Your node-wekit app
 
     concurrent:
@@ -199,5 +209,6 @@ module.exports = (grunt) ->
       'uglify'
       'copy:dist'
       'usemin'
+      'clean:releases'
       'nodewebkit'
     ]

@@ -1,8 +1,55 @@
-canvas {
+@import "../bower_components/skeleton-sass/compass/scss/skeleton";
+@include grid($baseWidth, false, 20, 12);
+@import "../bower_components/skeleton-sass/compass/scss/layout";
+@import "../bower_components/skeleton-sass/compass/scss/base";
+
+input[type="number"]{
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 6px 4px;
+  outline: none;
+  @include border-radius(2px);
+  font: {
+    size: $fontSize + 1;
+    family: $formFont;
+  };
+  color: #777;
+  margin: 0 0 20px;
+  width: 210px;
+  max-width: 100%;
+  display: inline-block;
+  &:hover, &:focus {
+    border: 1px solid #aaa;
+    color: #444;
+    @include box-shadow(0 0 3px rgba(0,0,0,0.2));
+  }
+  &:active {
+    border: 1px solid darken(#aaa, 10%);
+    @include box-shadow(0 0 3px rgba(0,0,0,0.3));
+  }
+  &.half{
+    width: 105px;
+  }
+  &.third{
+    width: 70px;
+  }
+}
+
+fieldset{
+  float: clear;
+}
+.left{
+  float: left;
+  margin-right: 15px;
+}
+
+canvas{
   border: 1px dotted #d3d3d3;
   float: left;
 }
+
 #controls{
-  margin-left: 20px;
-  float: left;
+  height: 400px;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
