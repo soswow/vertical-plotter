@@ -1,17 +1,64 @@
-Driver = require("./driver").Driver
-
 PI = Math.PI
 pow2 = (num) -> Math.pow(num, 2)
 sqrt = Math.sqrt
 
-class PlotterRenderer
-  constructor: (@plotter) ->
 
-class Plotter
+class scope.PlotterRenderer
+  plotter: null
+
+  constructor: (@canvas) ->
+    @ctx = @canvas.getContext '2d'
+
+  clear: ->
+    @canvas.width = @canvas.width
+
+  setPlotter: (@plotter) ->
+    @scaleFactor = @canvas.width / @plotter.settings.distance
+
+  drawLine: (x1, y1, x2, y2) ->
+#    console.log x1, y1, x2, y2
+    @ctx.moveTo x1 + 0.5, y1 + 0.5
+    @ctx.lineTo x2 + 0.5, y2 + 0.5
+
+  renderStrings: ->
+    @ctx.beginPath()
+    @ctx.lineWidth = 2
+    @ctx.strokeStyle = 'black'
+
+    @drawLine 0, 0, @plotter.state.x, @plotter.state.y
+    @drawLine @plotter.settings.distance, 0, @plotter.state.x, @plotter.state.y
+
+    @ctx.stroke()
+    @ctx.closePath()
+
+  renderPath: ->
+    @ctx.beginPath()
+    @ctx.lineWidth = 1
+    @ctx.strokeStyle = '#ccc'
+
+    @ctx.moveTo @plotter.path[0][0] + 0.5, @plotter.path[0][1] + 0.5
+    for [x, y] in @plotter.path[1..]
+      @ctx.lineTo x + 0.5, y + 0.5
+
+    @ctx.stroke()
+    @ctx.closePath()
+
+  renderModel: ->
+
+  render: ->
+    @clear()
+    @ctx.scale @scaleFactor, @scaleFactor
+    @renderPath() if @plotter.path?
+    @renderStrings()
+
+
+
+class scope.Plotter
   settings:
     distance: 0 #Distance between pulley centers
     pulleyRadius: 0
     stepsPerRev: 0
+    virtualSpeed: 1
     distancePerTurn: 0 #Should be calculated
 
   state:
@@ -22,39 +69,57 @@ class Plotter
 
   path: [] #Points that gandola already went
 
-  constructor: (initialState) ->
-    @driver = new Driver()
-    @renderer = new PlotterRenderer(this)
+  constructor: (@renderer, @driver, settings=null, state=null) ->
+    @settings = settings if settings
+    @state = state if state
+    @renderer?.setPlotter this
     @settings.distancePerTurn = 2 * PI * @settings.pulleyRadius / @settings.stepsPerRev
 
+    @turnPolleys(-1, -1)
+    @renderer?.render()
 
-  draw: (data, virtual=true, phisical=true, speed=1) ->
+  draw: (data, virtual=true, phisical=true) ->
     @clearState()
     @makeInstructions(data)
+    phisical = false unless @driver
+    virtual = false unless @renderer
+
+    throw "I can't on any media!" if not phisical and not virtual
+
     if phisical
       if virtual
         @driver.on 'doStep', =>
           @turnPolley
           @renderer.render()
-      @driver.doInstructions @instructions
+        @driver.doInstructions @instructions
     else if virtual
-      step = 0
-      next = =>
-        requestAnimationFrame =>
-          @turnPolleys @instructions.shift()
-          @renderer.render() if step % speed is 0
-          step += 1
-          next() if @instructions.length > 0
+      step = -1
+      makeStep = =>
+        nextInstruction = @instructions.shift()
+        @turnPolleys.apply this, nextInstruction
+        step += 1
+        if step % @settings.virtualSpeed is 0
+          requestAnimationFrame =>
+            @renderer.render()
+            makeStep() if @instructions.length > 0
+        else
+          makeStep() if @instructions.length > 0
+      makeStep()
 
   clearState: ->
 
-
   makeInstructions: (relativePath) ->
+    #TODO move this kind of functions somewhere else
+    distance = ({x: x1, y: y1}, {x: x2, y: y2}) ->
+      Math.sqrt pow2(x1 - x2) + pow2(y1 - y2)
+
+    @instructions = []
+
     state = _.clone @state
     for [dx, dy] in relativePath
       lineEnd = x:state.x + dx, y:state.y + dy
       d = distance state, lineEnd
-      return unless d
+      continue unless d
       samplesNumber = Math.ceil(d) * 2 # This constant should be tweaked
 
       samples =
@@ -68,7 +133,7 @@ class Plotter
         while not happy
           @updateStatePosition state
 
-          calculateTurnsForSide = (origin, side)->
+          calculateTurnsForSide = (origin, side) =>
             targetD = distance origin, sample
             currentD = distance origin, state
             distanceDiff = targetD - currentD
@@ -120,7 +185,6 @@ class Plotter
 #    height: y
 
   turnPolleys: (left, right) ->
-    return if left < 0 and right < 0
     @turnPolley('left', left) if left > -1
     @turnPolley('right', right) if right > -1
     @updateStatePosition @state
@@ -129,6 +193,3 @@ class Plotter
   turnPolley: (side, dir) ->
     mult = if dir is 0 then -1 else 1
     @state[side] += mult * @settings.distancePerTurn
-
-
-

@@ -14,23 +14,31 @@
   <div id="controls" class="four columns">
     <!--<form action="#">-->
       <label for="pulleysDistance">Distance between pulleys (mm)</label>
-      <input type="number" id="pulleysDistance" class="half" value="400.0" step="any" />
+      <input type="number" id="pulleysDistance" class="half" value="1118.0" step="any" />
       <label for="pulleyRadius">Pulleys radius (mm)</label>
-      <input type="number" id="pulleyRadius" class="half" value="2.4" step="any" />
+      <input type="number" id="pulleyRadius" class="half" value="12" step="any" />
       <label for="stepsPerRev">Steps per rev. (mm)</label>
       <input type="number" id="stepsPerRev" class="half" value="200" />
       <fieldset>
-        <label>Initial state (mm)</label>
-        <label for="leftInitLength" class="left">
+        <label>State (mm)</label>
+        <label for="leftLength" class="left">
           <span>Left: </span>
-          <input type="number" id="leftInitLength" class="third" value="300" />
+          <input type="number" id="leftLength" class="third" style="margin-bottom: 5px" value="730" step="any" />
         </label>
-        <label for="rightInitLength" class="left">
+        <label for="rightLength" class="left">
           <span>Right: </span>
-          <input type="number" id="rightInitLength" class="third" value="300" />
+          <input type="number" id="rightLength" class="third"  style="margin-bottom: 5px" value="625" step="any" />
+        </label>
+        <label for="xPosition" class="left">
+          <span>x: </span>
+          <input type="number" id="xPosition" class="third" readonly value="" />
+        </label>
+        <label for="yPosition" class="left">
+          <span>y: </span>
+          <input type="number" id="yPosition" class="third" readonly value="" />
         </label>
       </fieldset>
-      <button id="drawButton">Draw</button>
+      <button id="drawButton">Draw</button> <input type="number" id="virtualSpeed" class="third" value="1" />
     <!--</form>-->
   </div>
 </div>
@@ -50,8 +58,12 @@
 <!-- build:js scripts/vendor.js -->
 <script src="bower_components/underscore/underscore.js"></script>
 <!-- endbuild -->
+<script type="text/javascript">
+var scope = {};
+</script>
 <!-- build:js(.tmp) scripts/main.js -->
-<script src="scripts/main.js"></script>
+<script src="scripts/plotter.js"></script>
+<script src="scripts/ui.js"></script>
 <!-- endbuild -->
 </body>
 </html>
