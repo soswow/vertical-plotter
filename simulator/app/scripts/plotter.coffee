@@ -70,13 +70,27 @@ class scope.Plotter
   path: [] #Points that gandola already went
 
   constructor: (@renderer, @driver, settings=null, state=null) ->
-    @settings = settings if settings
+    @updateSettings(name, value) for name, value of settings if settings
     @state = state if state
     @renderer?.setPlotter this
-    @settings.distancePerTurn = 2 * PI * @settings.pulleyRadius / @settings.stepsPerRev
 
     @turnPolleys(-1, -1)
     @renderer?.render()
+
+  updateSettings: (name, value) ->
+    @settings[name] = value
+    if name is 'distance'
+      @renderer?.setPlotter this
+      @turnPolleys(-1, -1)
+      @renderer.render()
+
+    if name in ['pulleyRadius', 'stepsPerRev']
+      @settings.distancePerTurn = 2 * PI * @settings.pulleyRadius / @settings.stepsPerRev
+
+  updateState: (side, value) ->
+    @state[side] = value
+    @turnPolleys(-1, -1)
+    @renderer.render()
 
   draw: (data, virtual=true, phisical=true) ->
     @clearState()
@@ -84,12 +98,13 @@ class scope.Plotter
     phisical = false unless @driver
     virtual = false unless @renderer
 
-    throw "I can't on any media!" if not phisical and not virtual
+    throw "No madia to draw on!" if not phisical and not virtual
 
     if phisical
       if virtual
-        @driver.on 'doStep', =>
-          @turnPolley
+        @driver.on 'doStep', (side, dir) =>
+          #TODO turn polleys
+#          @turnPolleys
           @renderer.render()
         @driver.doInstructions @instructions
     else if virtual
@@ -106,7 +121,7 @@ class scope.Plotter
           makeStep() if @instructions.length > 0
       makeStep()
 
-  clearState: ->
+  clearState: -> #TODO
 
   makeInstructions: (relativePath) ->
     #TODO move this kind of functions somewhere else

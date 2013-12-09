@@ -44,6 +44,18 @@ domById("drawButton").addEventListener 'click', ->
 
   plotter.draw relativePath, true, false
 
+domIdToSetting =
+  virtualSpeed: 'virtualSpeed'
+  pulleysDistance: 'distance'
+  pulleyRadius: 'pulleyRadius'
+  stepsPerRev: 'stepsPerRev'
 
-domById("virtualSpeed").addEventListener 'change', ->
-  plotter.settings.virtualSpeed = +domById("virtualSpeed").value
+for domId, name of domIdToSetting
+  do (name) ->
+    domById(domId).addEventListener 'change', ->
+      plotter.updateSettings name, +@value
+
+for side in ['left', 'right']
+  do (side) ->
+    domById(side + 'Length').addEventListener 'change', ->
+      plotter.updateState side, +@value
