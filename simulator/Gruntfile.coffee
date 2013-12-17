@@ -4,6 +4,16 @@ module.exports = (grunt) ->
   require('time-grunt')(grunt)
   require('load-grunt-tasks')(grunt)
 
+  grunt.registerMultiTask 'watchSome', 'watch for some targets', ->
+    originalWatchConfig = grunt.config 'watch'
+    newWatchConfig = {}
+    @data.forEach (name) ->
+      newWatchConfig[name] = originalWatchConfig[name]
+
+    grunt.config 'watch', newWatchConfig
+    grunt.task.run 'watch'
+
+
   grunt.initConfig
     yeoman:
       app: 'app'
@@ -25,7 +35,14 @@ module.exports = (grunt) ->
           '{.tmp,<%= yeoman.app %>}/scripts/{,**/}*.js'
           '<%= yeoman.app %>/images/{,**/}*.{gif,jpeg,jpg,png,svg,webp}'
         ]
+      dist:
+        files: ['<%= yeoman.app %>/scripts/{,**/}*.{coffee,litcoffee,coffee.md}',
+                '<%= yeoman.app %>/styles/{,**/}*.{scss,sass}']
+        tasks: ['build']
 
+    watchSome:
+      serve: ['coffee', 'compass', 'livereload']
+      dist: ['dist']
 
     connect:
       options:
@@ -72,7 +89,6 @@ module.exports = (grunt) ->
           dest: '.tmp/scripts'
           ext: '.js'
         ]
-
 
     compass:
       options:
@@ -190,15 +206,23 @@ module.exports = (grunt) ->
 
 
     grunt.registerTask 'serve', (target) ->
-      if target is 'dist'
-        grunt.task.run ['build', 'connect:dist:keepalive']
-      else
-        grunt.task.run [
-          'clean:server'
-          'concurrent:server'
-          'connect:livereload'
-          'watch'
-        ]
+      tasks =
+        if target is 'dist'
+          ['build', 'connect:dist:keepalive']
+        else if target is 'desktop'
+          [
+            'build'
+            'watchSome:dist'
+          ]
+        else
+          [
+            'clean:server'
+            'concurrent:server'
+            'connect:livereload'
+            'watchSome:serve'
+          ]
+
+      grunt.task.run tasks
 
     grunt.registerTask 'build', [
       'clean:dist'

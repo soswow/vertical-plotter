@@ -1,13 +1,15 @@
 domById = (id) -> document.getElementById id
 
-if typeof exports isnt 'undefined'
-  Driver = exports("./driver").Driver
+if typeof require isnt 'undefined'
+  Driver = require("./scripts/node/driver").Driver
   driver = new Driver()
+  driver.on 'ready', ->
+    domById('status').innerText = 'Driver is connected'
+  driver.initialize()
 
 canvas = document.getElementsByTagName('canvas').item(0)
 canvas.width = 620
 canvas.height = 400
-
 
 settings =
   distance: +domById("pulleysDistance").value
@@ -25,11 +27,11 @@ plotter = new scope.Plotter(renderer, driver, settings, state)
 domById("drawButton").addEventListener 'click', ->
   x = plotter.state.x
   y = plotter.state.y
-  r = 100
+  r = 30
   oldx = x + Math.cos(0) * r
   oldy = y + Math.sin(0) * r
   #plotter.relativePlan.push [10, -10]
-  sides = 10
+  sides = 40
 
   relativePath =
     for i in [0..sides]
@@ -41,8 +43,9 @@ domById("drawButton").addEventListener 'click', ->
       oldx = newx
       oldy = newy
       [dx, dy]
+  relativePath = relativePath.concat [[0,0], [0, -r/2], [-r/2, 0], [0, r], [r, 0], [0, -r], [-r/2, 0], [0, r/2]]
 
-  plotter.draw relativePath, true, false
+  plotter.draw relativePath, true, true
 
 domIdToSetting =
   virtualSpeed: 'virtualSpeed'
@@ -59,3 +62,7 @@ for side in ['left', 'right']
   do (side) ->
     domById(side + 'Length').addEventListener 'change', ->
       plotter.updateState side, +@value
+
+domById('zoom').addEventListener 'change', ->
+  plotter.renderer.zoom = +@value
+  plotter.renderer.render()

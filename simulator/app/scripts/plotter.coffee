@@ -5,20 +5,26 @@ sqrt = Math.sqrt
 
 class scope.PlotterRenderer
   plotter: null
+  zoom: 1
 
   constructor: (@canvas) ->
     @ctx = @canvas.getContext '2d'
+    @width = @canvas.width
+    @height = @canvas.height
 
   clear: ->
-    @canvas.width = @canvas.width
+    @canvas.width = @width
+    @canvas.height = @height
 
-  setPlotter: (@plotter) ->
-    @scaleFactor = @canvas.width / @plotter.settings.distance
+  scaleFactor: ->
+    @width / @plotter.settings.distance
+
+  moveTo: (x, y) -> @ctx.moveTo x * @zoom + 0.5 - @transX, y * @zoom + 0.5 - @transY
+  lineTo: (x, y) -> @ctx.lineTo x * @zoom + 0.5 - @transX, y * @zoom + 0.5 - @transY
 
   drawLine: (x1, y1, x2, y2) ->
-#    console.log x1, y1, x2, y2
-    @ctx.moveTo x1 + 0.5, y1 + 0.5
-    @ctx.lineTo x2 + 0.5, y2 + 0.5
+    @moveTo x1, y1
+    @lineTo x2, y2
 
   renderStrings: ->
     @ctx.beginPath()
@@ -36,9 +42,9 @@ class scope.PlotterRenderer
     @ctx.lineWidth = 1
     @ctx.strokeStyle = '#ccc'
 
-    @ctx.moveTo @plotter.path[0][0] + 0.5, @plotter.path[0][1] + 0.5
+    @moveTo @plotter.path[0][0], @plotter.path[0][1]
     for [x, y] in @plotter.path[1..]
-      @ctx.lineTo x + 0.5, y + 0.5
+      @lineTo x, y
 
     @ctx.stroke()
     @ctx.closePath()
@@ -47,7 +53,13 @@ class scope.PlotterRenderer
 
   render: ->
     @clear()
-    @ctx.scale @scaleFactor, @scaleFactor
+    if @zoom > 1
+      @transX = @zoom * @plotter.state.x - @width
+      @transY = @zoom * @plotter.state.y - @height
+    else
+      @transX = 0
+      @transY = 0
+    @ctx.scale @scaleFactor(), @scaleFactor()
     @renderPath() if @plotter.path?
     @renderStrings()
 
@@ -70,18 +82,20 @@ class scope.Plotter
   path: [] #Points that gandola already went
 
   constructor: (@renderer, @driver, settings=null, state=null) ->
+    console.log 'Renderer in place' if @renderer?
+    console.log 'Driver in place' if @driver?
     @updateSettings(name, value) for name, value of settings if settings
     @state = state if state
-    @renderer?.setPlotter this
+    @renderer?.plotter = this
 
-    @turnPolleys(-1, -1)
+    @turnPolleys(null, null)
     @renderer?.render()
 
   updateSettings: (name, value) ->
     @settings[name] = value
     if name is 'distance'
-      @renderer?.setPlotter this
-      @turnPolleys(-1, -1)
+      @renderer?.plotter = this
+      @turnPolleys(null, null)
       @renderer.render()
 
     if name in ['pulleyRadius', 'stepsPerRev']
@@ -89,22 +103,27 @@ class scope.Plotter
 
   updateState: (side, value) ->
     @state[side] = value
-    @turnPolleys(-1, -1)
+    @turnPolleys(null, null)
     @renderer.render()
 
   draw: (data, virtual=true, phisical=true) ->
     @clearState()
     @makeInstructions(data)
+    f = (n) ->
+      return 0 unless n?
+      return 1 if n
+      return -1 unless n
+#    document.getElementById("log").innerText = 'left, right\n' + @instructions.map(([a,b]) -> f(a) + ', ' + f(b)).join("\n")
     phisical = false unless @driver
     virtual = false unless @renderer
+    console.log "Drawing on screen:#{virtual}, on board:#{phisical}"
 
     throw "No madia to draw on!" if not phisical and not virtual
 
     if phisical
       if virtual
-        @driver.on 'doStep', (side, dir) =>
-          #TODO turn polleys
-#          @turnPolleys
+        @driver.on 'doStep', (leftStep, rightStep) =>
+          @turnPolleys(leftStep, rightStep)
           @renderer.render()
         @driver.doInstructions @instructions
     else if virtual
@@ -135,7 +154,7 @@ class scope.Plotter
       lineEnd = x:state.x + dx, y:state.y + dy
       d = distance state, lineEnd
       continue unless d
-      samplesNumber = Math.ceil(d) * 2 # This constant should be tweaked
+      samplesNumber = Math.ceil(d) * 4 # This constant should be tweaked
 
       samples =
         for i in [0..samplesNumber]
@@ -158,16 +177,16 @@ class scope.Plotter
               bigger = distanceDiff > 0
               direction = bigger and 1 or -1
               state[side] += direction * @settings.distancePerTurn
-              +bigger
+              bigger
             else
-              -1
+              null
 
           happy = true
           instruction = [
             calculateTurnsForSide x: 0, y: 0, 'left'
             calculateTurnsForSide x: @settings.distance, y: 0, 'right'
           ]
-          @instructions.push(instruction) if instruction[0] > -1 or instruction[1] > -1
+          @instructions.push(instruction) if instruction[0]? or instruction[1]?
 
   updateStatePosition: (state) ->
     triangleHeight = (a, b, c) ->
@@ -200,11 +219,11 @@ class scope.Plotter
 #    height: y
 
   turnPolleys: (left, right) ->
-    @turnPolley('left', left) if left > -1
-    @turnPolley('right', right) if right > -1
+    @turnPolley('left', left) if left?
+    @turnPolley('right', right) if right?
     @updateStatePosition @state
     @path.push [@state.x, @state.y]
 
-  turnPolley: (side, dir) ->
-    mult = if dir is 0 then -1 else 1
+  turnPolley: (side, bigger) ->
+    mult = if bigger then 1 else -1
     @state[side] += mult * @settings.distancePerTurn

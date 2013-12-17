@@ -1,5 +1,7 @@
-Driver = require("./driver").Driver
+Driver = require("./node/driver").Driver
 driver = new Driver()
-driver.on 'ready', ->
-  @instructions = ['R','LR','R','R','LR','R','R','R','LR','LR','R','R','R','LR','R','R','LR','R','LR','R','R','LR','R','R','lR','R','lR','R','R','R','lR','R','lR','R','R','R','lR','R','lR','R','R','R','R','lR','R','lR','R','R','R','lR','R','l','lR','lR','lR','lR','lR','lR','lR','lR','lR','lR','R','lR','l','lR','lR','lR','lR','lR','R','lR','l','lR','lR','lR','R','l','l','l','l','lR','l','l','l','lR','l','lR','l','lR','l','l','l','lR','l','l','lR','l','lR','l','l','l','lR','l','lR','l','lr','l','l','l','lr','l','l','lr','l','l','l','lr','l','l','lr','l','l','lr','l','l','l','lr','r','r','r','lr','r','lr','r','r','lr','r','lr','r','r','lr','r','r','lr','r','lr','r','r','r','Lr','r','Lr','r','r','r','Lr','r','Lr','r','r','r','Lr','r','Lr','r','Lr','r','r','r','r','Lr','r','Lr','r','Lr','r','L','Lr','Lr','Lr','Lr','Lr','Lr','Lr','r','Lr','L','Lr','Lr','Lr','Lr','Lr','r','Lr','Lr','Lr','L','Lr','Lr','Lr','r','Lr','Lr','L','L','L','Lr','L','Lr','L','L','L','Lr','L','Lr','L','Lr','L','Lr','L','L','L','L','Lr','L','Lr','L','Lr','L','L','L','LR','L','L','LR','L','L','L','LR','L','L','LR','L','L','LR','L','LR','L','L','LR','L','L','L']
+driver.on 'ready', -> console.log 'connected'
+driver.on 'start', -> console.log 'started'
+driver.doInstructions([1, -1] for i in [0..100])
 driver.initialize()
+

@@ -46,16 +46,19 @@ class Driver
     return unless @ready
     if @instructions.length
       [leftStep, rightStep] = @instructions.shift()
-      @doStep('left', leftStep) if leftStep > -1
-      @doStep('right', rightStep) if rightStep > -1
+      @doStep('left', leftStep) if leftStep?
+      @doStep('right', rightStep) if rightStep?
+      @trigger 'doStep', leftStep, rightStep
 
     setTimeout @nextStep, 10 unless @kill
 
-  doStep: (side, dir) ->
-    @trigger 'doStep', side, dir
-    console.log @pins.dir[side], dir
-    console.log @pins.step[side], 'toggl'
-    @board.digitalWrite @pins.dir[side],  dir #board.HIGH or board.LOW
+  doStep: (side, bigger) ->
+    dir = switch side
+      when 'left'
+        if bigger then @board.LOW else @board.HIGH
+      when 'right'
+        if bigger then @board.HIGH else @board.LOW
+    @board.digitalWrite @pins.dir[side],  dir
     @board.digitalWrite @pins.step[side], @board.HIGH
     @board.digitalWrite @pins.step[side], @board.LOW
 

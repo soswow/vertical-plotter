@@ -38,9 +38,24 @@
           <input type="number" id="yPosition" class="third" readonly value="" />
         </label>
       </fieldset>
-      <button id="drawButton">Draw</button> <input type="number" id="virtualSpeed" class="third" value="1" />
+      <fieldset>
+        <label for="virtualSpeed" class="left">
+          <span>Speed: </span>
+          <input type="number" id="virtualSpeed" class="third" value="1" />
+        </label>
+        <label for="zoom" class="left">
+          <span>Zoom: </span>
+          <input type="number" id="zoom" class="third" value="1" />
+        </label>
+      </fieldset>
+      <div>
+        Status: <span id="status"></span>
+      </div>
+      <button id="drawButton">Draw</button>
+
     <!--</form>-->
   </div>
+  <div id="log"></div>
 </div>
 
 <!--<div id="controls">-->
